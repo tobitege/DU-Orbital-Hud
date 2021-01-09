@@ -35,11 +35,11 @@ ShowOdometer = true -- export: Uncheck to hide the odometer panel up top.
 hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
 ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
 StallAngle = 35 --export: Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning when not autopilot.  (default 35, higher = more tolerance for yaw/pitch/roll)
-speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
+speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change).
 speedChangeSmall = 1 -- export: the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
 brakeLandingRate = 30 -- export: Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
 MaxPitch = 30 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
-ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in km/h. 
+ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in km/h.
 AtmoSpeedLimit = 1050 -- export: Speed limit in Atmosphere in km/h.  If you exceed this limit the ship will attempt to break till below this limit.
 ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
 AutoTakeoffAltitude = 1000 -- export: How high above your ground starting position AutoTakeoff tries to put you
@@ -48,7 +48,7 @@ LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you 
 MaxGameVelocity = 8333.00 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
 AutopilotTargetOrbit = 50000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU (Default 50000)
 AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
-warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
+warmup = 32 -- export: How long it takes your engines to warmup. Basic Space Engines, from XS to XL: 0.25,1,4,16,32
 MouseYSensitivity = 0.003 --export:1 For virtual joystick only
 MouseXSensitivity = 0.003 -- export: For virtual joystick only
 autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
@@ -72,7 +72,7 @@ ExtraLateralTags = "none" -- export: Enter any extra lateral tags you use inside
 ExtraVerticalTags = "none" -- export: Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "up down"  These will be added to the engines that are control by vertical.
 ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
 UseSatNav = false -- export: Toggle on if using Trog SatNav script.  This will provide SatNav support.
-apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
+apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps. The bigger the number the less often the autopilot and hud updates but may help performance on slower machings.
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -103,13 +103,14 @@ TargetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded o
 TotalDistanceTravelled = 0.0
 TotalFlightTime = 0
 SavedLocations = {}
-VectorToTarget = false    
+VectorToTarget = false
 LocationIndex = 0
 LastMaxBrake = 0
 LockPitch = nil
 LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
+AtmoSpeedLimitIsOn = true
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -132,9 +133,8 @@ local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "Prog
                     "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                     "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                     "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
-                    "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
+                    "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake",
                     "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
-
 
 -- function localizations for improved performance when used frequently or in loops.
 local sprint = system.print
@@ -180,8 +180,8 @@ local lastEccentricity = 1
 local holdAltitudeButtonModifier = 5
 local antiGravButtonModifier = 5
 local isBoosting = false -- Dodgin's Don't Die Rocket Govenor
-local brakeDistance, brakeTime = 0
-local maxBrakeDistance, maxBrakeTime = 0
+local brakeDistance, brakeTime = 0, 0
+local maxBrakeDistance, maxBrakeTime = 0, 0
 local hasSpaceRadar = false
 local hasAtmoRadar = false
 local autopilotTargetPlanet = nil
@@ -190,7 +190,7 @@ local flightTime = 0
 local wipedDatabank = false
 local upAmount = 0
 local simulatedX = 0
-local simulatedY = 0        
+local simulatedY = 0
 local msgTimer = 3
 local distance = 0
 local radarMessage = ""
@@ -203,7 +203,7 @@ local hovGndDet = -1
 local clearAllCheck = false
 local myAutopilotTarget=""
 local inAtmo = (atmosphere() > 0)
-local coreAltitude = core.getAltitude()
+local coreAltitude = math.floor(core.getAltitude()) --core.getAltitude()
 local elementsID = core.getElementIdList()
 local lastTravelTime = system.getTime()
 local gyroIsOn = nil
@@ -317,28 +317,27 @@ function LoadVariables()
     MinimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 
     if antigrav and not ExternalAGG then
-        if AntigravTargetAltitude == nil then 
-            AntigravTargetAltitude = coreAltitude
-        end
+        if AntigravTargetAltitude == nil then AntigravTargetAltitude = coreAltitude end
+        if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
         antigrav.setBaseAltitude(AntigravTargetAltitude)
     end
     rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
               [[)]]
     rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
-                 mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]    
+                 mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
 end
 
 function CalculateFuelVolume(curMass, vanillaMaxVolume)
     if curMass > vanillaMaxVolume then
         vanillaMaxVolume = curMass
     end
-    if ContainerOptimization > 0 then 
+    if ContainerOptimization > 0 then
         vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * ContainerOptimization * 0.05)
     end
-    if FuelTankOptimization > 0 then 
+    if FuelTankOptimization > 0 then
         vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * FuelTankOptimization * 0.05)
     end
-    return vanillaMaxVolume            
+    return vanillaMaxVolume
 end
 
 function ProcessElements()
@@ -932,6 +931,7 @@ end
 function ToggleAltitudeHold()
     AltitudeHold = not AltitudeHold
     if AltitudeHold then
+        holdAltitudeButtonModifier, OldButtonMod = 5, 5 -- reset modifiers
         Autopilot = false
         ProgradeIsOn = false
         RetrogradeIsOn = false
@@ -960,7 +960,6 @@ function ToggleAltitudeHold()
         AutoTakeoff = false
         BrakeLanding = false
         Reentry = false
-        AutoTakeoff = false
         VectorToTarget = false
     end
 end
@@ -1112,7 +1111,6 @@ function BrakeToggle()
         ProgradeIsOn = false -- No reason to brake while facing prograde, but retrograde yes.
         BrakeLanding = false
         AutoLanding = false
-        AltitudeHold = false -- And stop alt hold
         LockPitch = nil
         autoRoll = autoRollPreference
     end
@@ -1203,7 +1201,7 @@ end
 function getPitch(gravityDirection, forward, right)
     local horizontalForward = gravityDirection:cross(right):normalize_inplace() -- Cross forward?
     local pitch = math.acos(utils.clamp(horizontalForward:dot(-forward), -1, 1)) * constants.rad2deg -- acos?
-    
+
     if horizontalForward:cross(-forward):dot(right) < 0 then
         pitch = -pitch
     end -- Cross right dot forward?
@@ -1218,7 +1216,7 @@ function clearAll()
         AutopilotCruising = false
         Autopilot = false
         AutopilotRealigned = false
-        AutopilotStatus = "Aligning"                
+        AutopilotStatus = "Aligning"
         RetrogradeIsOn = false
         ProgradeIsOn = false
         AltitudeHold = false
@@ -1530,14 +1528,13 @@ end
 
 function ToggleAntigrav()
     if antigrav and not ExternalAGG then
+        antiGravButtonModifier, OldAntiMod = 5, 5 -- reset modifiers
         if antigrav.getState() == 1 then
             antigrav.deactivate()
             antigrav.hide()
         else
             if AntigravTargetAltitude == nil then AntigravTargetAltitude = coreAltitude end
-            if AntigravTargetAltitude < 1000 then
-                AntigravTargetAltitude = 1000
-            end
+            if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             antigrav.activate()
             antigrav.show()
         end
@@ -1561,7 +1558,7 @@ function BeginReentry()
             Reentry = true
             if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
                 Nav.control.cancelCurrentControlMasterMode()
-            end                
+            end
             autoRoll = true
             BrakeIsOn = false
             msgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
@@ -1663,6 +1660,19 @@ function SetupButtons()
                 msgText = "Orbit Display Disabled"
             end
         end)
+    -- Toggle for atmospheric speed limit (default: on)
+    MakeButton("Engage Speed Limit", "Disable Speed Limit", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+        function()
+            return AtmoSpeedLimitIsOn
+        end, function()
+            AtmoSpeedLimitIsOn = not AtmoSpeedLimitIsOn
+            if (AtmoSpeedLimitIsOn) then
+                 msgText = "Atmo Speed Limit Enabled"
+            else
+                msgText = "Atmo Speed Limit Disabled"
+            end
+        end)
+
     y = y + buttonHeight + 20
     MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
         function() return Reentry end, function() reentryMode = true BeginReentry() end, function() return (coreAltitude > ReentryAltitude) end )
@@ -1681,7 +1691,7 @@ function SetupButtons()
         if (repairArrows) then
             msgText = "Repair Arrows Enabled"
         else
-            msgText = "Repair Arrows Diabled"
+            msgText = "Repair Arrows Disabled"
         end
     end, function()
         return isRemote() == 1
@@ -1790,7 +1800,6 @@ function updateHud(newContent)
     -- PRIMARY FLIGHT INSTRUMENTS
 
     DrawVerticalSpeed(newContent, altitude) -- Weird this is draw during remote control...?
-
 
     if isRemote() == 0 or RemoteHud then
         -- Don't even draw this in freelook
@@ -2011,7 +2020,7 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
     </g>]], throtPosX+10, y1, label, throtPosX+10, y2, value, unit)
 end
 
- 
+
 function DrawVerticalSpeed(newContent, altitude) -- Draw vertical speed indicator - Code by lisa-lionheart
     if (altitude < 200000 and not inAtmo) or (altitude and inAtmo) then
         local vSpd = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
@@ -2042,7 +2051,7 @@ function DrawVerticalSpeed(newContent, altitude) -- Draw vertical speed indicato
     end
 end
 
-function getHeading(forward) -- code provided by tomisunlucky   
+function getHeading(forward) -- code provided by tomisunlucky
     local up = -vec3(core.getWorldVertical())
     forward = forward - forward:project_on(up)
     local north = vec3(0, 0, 1)
@@ -2100,10 +2109,10 @@ function DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, 
         if (i % 10 == 0) then
             yawlen = 10
             local num = i
-            if num == 360 then 
+            if num == 360 then
                 num = 0
-            elseif num  > 360 then  
-                num = num - 360 
+            elseif num  > 360 then
+                num = num - 360
             elseif num < 0 then
                 num = num + 360
             end
@@ -2131,7 +2140,7 @@ function DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, 
 end
 
 function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX, centerY, nearPlanet, atmoYaw, speed)
-    -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
+    -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar**
     local horizonRadius = circleRad -- Aliased global
     local pitchX = mfloor(horizonRadius * 3 / 5)
     if horizonRadius > 0 then
@@ -2162,7 +2171,7 @@ function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX,
                 else
                     newContent[#newContent + 1] = stringf([[<g class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]], centerX-pitchX+10, y, i)
                     newContent[#newContent + 1] = stringf([[<g class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]], centerX+pitchX-10, y, i)
-                end                            
+                end
                 tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX+pitchX, y, len)
             else
                 tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-pitchX-len, y, len)
@@ -2170,8 +2179,8 @@ function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX,
             end
         end
         newContent[#newContent + 1] = tickerPath .. [["/>]]
-        local pitchstring = "PITCH"                
-        if not nearPlanet then 
+        local pitchstring = "PITCH"
+        if not nearPlanet then
             pitchstring = "REL PITCH"
         end
         if originalPitch > 90 and not inAtmo then
@@ -2187,7 +2196,7 @@ function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX,
                     <text x="%d" y="%d">%s</text>
                     <text x="%d" y="%d">%d deg</text>
                     </g>
-                    ]],  centerX, centerY-15, "Yaw", centerX, centerY+20, atmoYaw)                            
+                    ]],  centerX, centerY-15, "Yaw", centerX, centerY+20, atmoYaw)
                 end
                 newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], -originalRoll, centerX, centerY)
             else
@@ -2208,7 +2217,7 @@ function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX,
         end
         newContent[#newContent + 1] = "</g>"
         if horizonRadius < 200 then
-            if inAtmo and speed > minAutopilotSpeed then 
+            if inAtmo and speed > minAutopilotSpeed then
                 newContent[#newContent + 1] = stringf([["
                 <g class="pdim txt txtmid">
                 <text x="%d" y="%d">%s</text>
@@ -2223,7 +2232,7 @@ function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX,
                 <text x="%d" y="%d">%s</text>
                 <text x="%d" y="%d">%d deg</text>
                 </g>
-                ]], centerX, centerY-horizonRadius, pitchstring, centerX, centerY-horizonRadius+15, pitchC )                       
+                ]], centerX, centerY-horizonRadius, pitchstring, centerX, centerY-horizonRadius+15, pitchC)
             end
         end
     end
@@ -2243,14 +2252,30 @@ function DrawAltitudeDisplay(newContent, altitude, nearPlanet)
         <text x="%d" y="%d">AGL: %.1fm</text>
         </g>
         ]], rectX+rectW, rectY+rectH+20, gndHeight))
+    --end
+    -- TESTING for debug purposes only!
+    -- elseif AggAltHoldLockable() then
+    --     local aggAlt = antigrav.getBaseAltitude()
+    --     altDiff = aggAlt - (coreAltitude + 15)
+    --     minmax = 500 + velMag * 1.3
+    --     targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2.2 * MaxPitch
+    --     --table.insert(newContent, stringf([[
+    --     --<g class="txtend"><text x="%d" y="%d">Core Alt: %.1f</text></g>
+    --     --]], rectX+rectW, rectY+rectH+20, coreAltitude))
+    --     --table.insert(newContent, stringf([[
+    --     --<g class="txtend"><text x="%d" y="%d">AGG Alt: %.1f</text></g>
+    --     --]], rectX+rectW, rectY+rectH+40, aggAlt))
+    --     table.insert(newContent, stringf([[
+    --     <g class="txtend"><text x="%d" y="%d">TPitch: %.1f</text></g>
+    --     ]], rectX+rectW, rectY+rectH+60, targetPitch))
     end
 
     if nearPlanet and ((altitude < 200000 and not inAtmo) or (altitude and inAtmo)) then
         table.insert(newContent, stringf([[
-            <g class="pdim">                        
-                <rect class="line" x="%d" y="%d" width="%d" height="%d"/> 
+            <g class="pdim">
+                <rect class="line" x="%d" y="%d" width="%d" height="%d"/>
                 <clipPath id="alt"><rect class="line" x="%d" y="%d" width="%d" height="%d"/></clipPath>
-                <g clip-path="url(#alt)">]], 
+                <g clip-path="url(#alt)">]],
                 rectX - 1, rectY - 4, rectW + 2, rectH + 6,
                 rectX + 1, rectY - 1, rectW - 4, rectH))
 
@@ -2278,7 +2303,7 @@ function DrawAltitudeDisplay(newContent, altitude, nearPlanet)
                 class = "altbig"
             end
 
-            if isNegative then  
+            if isNegative then
                 class = class .. " red"
             end
 
@@ -2300,12 +2325,12 @@ function DrawAltitudeDisplay(newContent, altitude, nearPlanet)
                 intDigit = temp
             end
 
-            local topGlyphOffset = glyphH * (fract - 1) 
+            local topGlyphOffset = glyphH * (fract - 1)
             local botGlyphOffset = topGlyphOffset + glyphH
 
             local x = rectX + glyphXOffset + (6 - index) * glyphW
             local y = rectY + glyphYOffset
-            
+
             -- <g class="%s" clip-path="url(#%s)">
             table.insert(newContent, stringf([[
                 <g class="%s">
@@ -2313,7 +2338,7 @@ function DrawAltitudeDisplay(newContent, altitude, nearPlanet)
                 <text x="%d" y="%f">%d</text>
                 </g>
             ]], class, x, y + topGlyphOffset, fracDigit, x, y + botGlyphOffset, intDigit))
-            
+
             index = index + 1
             divisor = divisor * 10
             if intDigit == rolloverDigit then
@@ -2334,14 +2359,13 @@ function DrawPrograde (newContent, velocity, speed, centerX, centerY)
         local velo = vec3(velocity)
         local relativePitch = getRelativePitch(velo)
         local relativeYaw = getRelativeYaw(velo)
-        
         local dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
         local dy = (relativePitch/pitchRange)*horizonRadius
         local x = centerX + dx
         local y = centerY + dy
 
         local distance = math.sqrt((dx)^2 + (dy)^2)
-            
+
         if distance < horizonRadius then
             newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', x, y)
             -- Draw a dot or whatever at x,y, it's inside the AH
@@ -2360,7 +2384,7 @@ function DrawPrograde (newContent, velocity, speed, centerX, centerY)
         end
         relativePitch = getRelativePitch(-velo)
         relativeYaw = getRelativeYaw(-velo)
-        
+
         dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
         dy = (relativePitch/pitchRange)*horizonRadius
         x = centerX + dx
@@ -2437,13 +2461,13 @@ function DrawWarnings(newContent)
     if isBoosting then
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
                                           warningX, ewarpY+20)
-    end                  
+    end
     if antigrav and not ExternalAGG and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
         if math.abs(coreAltitude - antigrav.getBaseAltitude()) < 501 then
-            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">AGG On - Target Altitude: %d Singluarity Altitude: %d</text>]],
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">AGG On - Target Altitude: %d Singularity Altitude: %d</text>]],
                 warningX, apY+20, mfloor(AntigravTargetAltitude), mfloor(antigrav.getBaseAltitude()))
         else
-            newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">AGG On - Target Altitude: %d Singluarity Altitude: %d</text>]],
+            newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">AGG On - Target Altitude: %d Singularity Altitude: %d</text>]],
                 warningX, apY+20, mfloor(AntigravTargetAltitude), mfloor(antigrav.getBaseAltitude()))
         end
     elseif Autopilot and AutopilotTargetName ~= "None" then
@@ -2462,7 +2486,7 @@ function DrawWarnings(newContent)
     if AltitudeHold then
         if AutoTakeoff then
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Ascent to %s</text>]],
-                                              warningX, apY, getDistanceDisplayString(HoldAltitude))
+                                              warningX, apY, getDistanceDisplayString(HoldAltitude,0,4000))
             if BrakeIsOn then
                 newContent[#newContent + 1] = stringf(
                                                   [[<text class="crit" x="%d" y="%d">Throttle Up and Disengage Brake For Takeoff</text>]],
@@ -2470,7 +2494,7 @@ function DrawWarnings(newContent)
             end
         else
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
-                                              warningX, apY, getDistanceDisplayString2(HoldAltitude))
+                                              warningX, apY, getDistanceDisplayString(HoldAltitude,0,4000))
         end
     end
     if BrakeLanding then
@@ -2602,36 +2626,22 @@ function DisplayOrbitScreen(newContent)
     end
 end
 
-function getDistanceDisplayString(distance)
+function getDistanceDisplayString(distance, decimals, kmCutoff)
+    distance = distance or 0
     local su = distance > 100000
-    local result = ""
+    kmCutoff = kmCutoff or 1000
+    if kmCutoff < 1000 or kmCutoff > 10000 then kmCutoff = 1000 end
+    decimals = decimals or 2
+    if decimals < 0 or decimals > 3 then decimals = 0 end
     if su then
         -- Convert to SU
-        result = round(distance / 1000 / 200, 1) .. " SU"
-    elseif distance < 1000 then
-        result = round(distance, 1) .. " M"
+        return round(distance / 1000 / 200, decimals) .. " SU"
+    elseif distance < kmCutoff then
+        return string.format("%d", round(distance)) .. " M"
     else
         -- Convert to KM
-        result = round(distance / 1000, 1) .. " KM"
+        return round(distance / 1000, decimals) .. " KM"
     end
-
-    return result
-end
-
-function getDistanceDisplayString2(distance)
-    local su = distance > 100000
-    local result = ""
-    if su then
-        -- Convert to SU
-        result = round(distance / 1000 / 200, 2) .. " SU"
-    elseif distance < 1000 then
-        result = round(distance, 2) .. " M"
-    else
-        -- Convert to KM
-        result = round(distance / 1000, 2) .. " KM"
-    end
-
-    return result
 end
 
 function getSpeedDisplayString(speed) -- TODO: Allow options, for now just do kph
@@ -4223,8 +4233,8 @@ function script.onStart()
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("oneSecond", 1)
         unit.setTimer("tenthSecond", 1/10)
-        if UseSatNav then 
-            unit.setTimer("fiveSecond", 5) 
+        if UseSatNav then
+            unit.setTimer("fiveSecond", 5)
         end
     end)
 end
@@ -4285,7 +4295,7 @@ function script.onTick(timerId)
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. AutopilotTargetName .. '", "unit":""}')
                 travelTime = GetAutopilotTravelTime() -- This also sets AutopilotDistance so we don't have to calc it again
-                if customLocation then 
+                if customLocation then
                     distance = (vec3(core.getConstructWorldPos()) - CustomTarget.position):len()
                 else
                     distance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
@@ -4344,7 +4354,7 @@ function script.onTick(timerId)
                 warpdrive.hide()
                 showWarpWidget = false
             end
-        end        
+        end
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
         clearAllCheck = false
@@ -4365,16 +4375,16 @@ function script.onTick(timerId)
         if myAutopilotTarget ~= nil and myAutopilotTarget ~= "" and myAutopilotTarget ~= "SatNavNotChanged" then
             local result = json.decode(dbHud_1.getStringValue("SavedLocations"))
             if result ~= nil then
-                _G["SavedLocations"] = result        
-                local index = -1        
-                local newLocation        
-                for k, v in pairs(SavedLocations) do        
-                    if v.name and v.name == "SatNav Location" then                   
-                        index = k                
-                        break                
-                    end            
-                end        
-                if index ~= -1 then       
+                _G["SavedLocations"] = result
+                local index = -1
+                local newLocation
+                for k, v in pairs(SavedLocations) do
+                    if v.name and v.name == "SatNav Location" then
+                        index = k
+                        break
+                    end
+                end
+                if index ~= -1 then
                     newLocation = SavedLocations[index]            
                     index = -1            
                     for k, v in pairs(atlas[0]) do           
@@ -4429,7 +4439,7 @@ function script.onTick(timerId)
         planet = sys:closestBody(core.getConstructWorldPos())
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
-        hovGndDet = hoverDetectGround() 
+        hovGndDet = hoverDetectGround()
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
         TargetGroundAltitude = Nav:getTargetGroundAltitude()
@@ -4442,8 +4452,13 @@ function script.onTick(timerId)
                 ToggleAutopilot()
             end
         end
+        coreAltitude = core.getAltitude()
+        if coreAltitude == 0 then
+            coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
+        end
         LastIsWarping = isWarping
-        if inAtmo and atmosphere() > 0.09 then
+        --if inAtmo and atmosphere() > 0.09 then
+        if AtmoSpeedLimitIsOn and coreAltitude < 8000 then
             if not speedLimitBreaking  then
                 if velMag > (AtmoSpeedLimit / 3.6) then
                     BrakeIsOn = true
@@ -4454,16 +4469,12 @@ function script.onTick(timerId)
                     BrakeIsOn = false
                     speedLimitBreaking = false
                 end
-            end    
+            end
         end
         if BrakeIsOn then
             brakeInput = 1
         else
             brakeInput = 0
-        end
-        coreAltitude = core.getAltitude()
-        if coreAltitude == 0 then
-            coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
         end
 
         local newContent = {}
@@ -4479,8 +4490,8 @@ function script.onTick(timerId)
         HUDEpilogue(newContent)
 
         newContent[#newContent + 1] = stringf(
-            [[<svg width="100%%" height="100%%" style="position:absolute;top:0;left:0"  viewBox="0 0 %d %d">]],
-            ResolutionX, ResolutionY)   
+            [[<svg width="100%%" height="100%%" style="position:absolute;top:0;left:0" viewBox="0 0 %d %d">]],
+            ResolutionX, ResolutionY)
         if msgText ~= "empty" then
             DisplayMessage(newContent, msgText)
         end
@@ -4579,10 +4590,10 @@ function script.onTick(timerId)
                 else -- Keyboard mode
                     simulatedX = 0
                     simulatedY = 0
-                    -- Don't touch anything, they have it with kb only.  
+                    -- Don't touch anything, they have it with kb only.
                 end
 
-                -- Right so.  We can't detect a mouse click.  That's stupid.  
+                -- Right so.  We can't detect a mouse click.  That's stupid.
                 -- We have two options.  1. Use mouse wheel movement as a click, or 2. If you're hovered over a button and let go of Ctrl, it's a click
                 -- I think 2 is a much smoother solution.  Even if we later want to have them input some coords
                 -- We'd have to hook 0-9 in their events, and they'd have to point at the target, so it wouldn't be while this screen is open
@@ -4594,13 +4605,12 @@ function script.onTick(timerId)
                     -- Note that because SVG lines fucking suck, we have to do a translate and they can't use calc in their params
                     DrawCursorLine(newContent)
                 end
-            else
-                -- Ctrl is being held, draw buttons.
+            elseif holdingCtrl then
+                -- Shift is being held, draw buttons.
                 -- Brake toggle, face prograde, face retrograde (for now)
                 -- We've got some vars setup in Start for them to make this easier to work with
                 SetButtonContains()
                 DrawButtons(newContent)
-
             end
             -- Cursor always on top, draw it last
             newContent[#newContent + 1] = stringf(
@@ -4620,16 +4630,16 @@ function script.onTick(timerId)
         end
         if ProgradeIsOn then
             if velMag > minAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
-                local align = AlignToWorldVector(vec3(velocity),0.01) 
-                if spaceLand then 
+                local align = AlignToWorldVector(vec3(velocity),0.01)
+                if spaceLand then
                     autoRoll = true
-                    if align then 
+                    if align then
                         ProgradeIsOn = false
                         reentryMode = true
                         BeginReentry()
-                        spaceLand = false   
+                        spaceLand = false
                         finalLand = true
-                        autoRoll = autoRollPreference   
+                        autoRoll = autoRollPreference
                     end
                 end
             end
@@ -4820,7 +4830,7 @@ function script.onTick(timerId)
             -- User is assumed to be outside the construct
             autoRoll = true -- Let Nav handle that while we're here
             local targetPitch = 0
-            -- Keep brake engaged at all times unless: 
+            -- Keep brake engaged at all times unless:
             -- Ship is aligned with the target on yaw (roll and pitch are locked to 0)
             -- and ship's speed is below like 5-10m/s
             local pos = vec3(core.getConstructWorldPos()) + vec3(unit.getMasterPlayerRelativePosition()) -- Is this related to core forward or nah?
@@ -4834,7 +4844,7 @@ function script.onTick(timerId)
             AlignToWorldVector(distancePos:normalize())
             local targetDistance = 40
             -- local onShip = false
-            -- if distanceDown < 1 then 
+            -- if distanceDown < 1 then
             --    onShip = true
             -- end
             local nearby = (distance < targetDistance)
@@ -4858,7 +4868,7 @@ function script.onTick(timerId)
             local worldV = vec3(core.getWorldVertical())
             local pitch = getPitch(worldV, constrF, constrR)
             local autoPitchThreshold = 1.0
-            -- Copied from autoroll let's hope this is how a PID works... 
+            -- Copied from autoroll let's hope this is how a PID works...
             if math.abs(targetPitch - pitch) > autoPitchThreshold then
                 if (pitchPID == nil) then
                     pitchPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
@@ -4879,26 +4889,32 @@ function script.onTick(timerId)
             -- This may be better to smooth evenly regardless of HoldAltitude.  Let's say, 2km scaling?  Should be very smooth for atmo
             -- Even better if we smooth based on their velocity
             local minmax = 500 + velMag
-            local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch
-            if not AltitudeHold then
-                targetPitch = 0
+            local targetPitch = 0
+            -- tobitege with AGG+alt hold the pitch needs to be stronger
+            if AggAltHoldLockable() then
+                local aggAlt = antigrav.getBaseAltitude()
+                altDiff = aggAlt - (altitude + 15)
+                minmax = 500 + velMag * 1.3
+                targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2.2 * MaxPitch
+            elseif AltitudeHold then
+                targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch
             end
-            if LockPitch ~= nil then 
-                if nearPlanet then 
-                    targetPitch = LockPitch 
+            if LockPitch ~= nil then
+                if nearPlanet then
+                    targetPitch = LockPitch
                 else
                     LockPitch = nil
                 end
             end
             autoRoll = true
-            
+
             if Reentry then
                 local fasterSpeed = ReentrySpeed
                 if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= fasterSpeed then -- This thing is dumb.
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, fasterSpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
-                end 
+                end
                 if not reentryMode then
                     targetPitch = -80
                     if atmosphere() > 0.02 then
@@ -4912,7 +4928,7 @@ function script.onTick(timerId)
                     reentryMode = false
                     Reentry = false
                     autoRoll = autoRollPreference
-                end    
+                end
             end
 
             -- The clamp should now be redundant
@@ -5016,7 +5032,7 @@ function script.onTick(timerId)
             if AutoTakeoff or spaceLaunch then
                 if targetPitch < 20 then
                     AutoTakeoff = false -- No longer in ascent
-                    if not spaceLaunch then 
+                    if not spaceLaunch then
                         if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                             Nav.control.cancelCurrentControlMasterMode()
                         end
@@ -5040,7 +5056,7 @@ function script.onTick(timerId)
                     end
                 end
             end
-            -- Copied from autoroll let's hope this is how a PID works... 
+            -- Copied from autoroll let's hope this is how a PID works...
             if math.abs(targetPitch - pitch) > autoPitchThreshold then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                     pitchPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
@@ -5053,19 +5069,23 @@ function script.onTick(timerId)
         lastEccentricity = orbit.eccentricity
 
         if antigrav and not ExternalAGG and coreAltitude < 200000 then
-                if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
-                if desiredBaseAltitude ~= AntigravTargetAltitude then
-                    desiredBaseAltitude = AntigravTargetAltitude
-                    antigrav.setBaseAltitude(desiredBaseAltitude)
-                end
+            if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
+            if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+            if desiredBaseAltitude ~= AntigravTargetAltitude then
+                desiredBaseAltitude = AntigravTargetAltitude
+                antigrav.setBaseAltitude(desiredBaseAltitude)
+            end
         end
     end
 end
 
 function script.onFlush()
-    if antigrav  and not ExternalAGG then
-        if antigrav.getState() == 0 and antigrav.getBaseAltitude() ~= AntigravTargetAltitude then 
-            antigrav.setBaseAltitude(AntigravTargetAltitude) 
+    if antigrav and not ExternalAGG then
+        if antigrav.getState() == 0 and antigrav.getBaseAltitude() ~= AntigravTargetAltitude then
+            if not AntigravTargetAltitude or AntigravTargetAltitude < 1000 then
+                AntigravTargetAltitude = 1000
+            end
+            antigrav.setBaseAltitude(AntigravTargetAltitude)
         end
     end
     local torqueFactor = 2 -- Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
@@ -5366,17 +5386,19 @@ function script.onActionStart(action)
         OldAntiMod = antiGravButtonModifier
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil  then
-                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                if AggAltHoldLocked() then
                     AntigravTargetAltitude = AntigravTargetAltitude + antiGravButtonModifier
                     HoldAltitude = AntigravTargetAltitude
                 else
                     AntigravTargetAltitude = AntigravTargetAltitude + antiGravButtonModifier
                 end
             else
-                AntigravTargetAltitude = desiredBaseAltitude + 100
+                AntigravTargetAltitude = (desiredBaseAltitude or 1000) + 100
             end
+            if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + holdAltitudeButtonModifier
+            if HoldAltitude > 50000 then HoldAltitude = 50000 end
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(1.0)
         end
@@ -5385,19 +5407,20 @@ function script.onActionStart(action)
         OldAntiMod = antiGravButtonModifier
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
-                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                if AggAltHoldLocked() then
                     AntigravTargetAltitude = AntigravTargetAltitude - antiGravButtonModifier
                     if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                     HoldAltitude = AntigravTargetAltitude
                 else
                     AntigravTargetAltitude = AntigravTargetAltitude - antiGravButtonModifier
-                    if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                 end
             else
-                AntigravTargetAltitude = desiredBaseAltitude
+                AntigravTargetAltitude = desiredBaseAltitude or 1000
             end
+            if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - holdAltitudeButtonModifier
+            if HoldAltitude < -1500 then HoldAltitude = coreAltitude end
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(-1.0)
         end
@@ -5462,10 +5485,10 @@ function script.onActionStart(action)
         end
     elseif action == "booster" then
         -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-        if VanillaRockets then 
+        if VanillaRockets then
             Nav:toggleBoosters()
-        elseif not isBoosting then 
-           if not IsRocketOn then 
+        elseif not isBoosting then
+           if not IsRocketOn then
                Nav:toggleBoosters()
                IsRocketOn = true
            end
@@ -5578,48 +5601,87 @@ function script.onActionStop(action)
     end
 end
 
+function AggAltHoldLockable()
+    if not AltitudeHold or not antigrav or ExternalAGG or antigrav.getState() == 0 or AntigravTargetAltitude == nil then
+        return false
+    end
+    local aggAlt = antigrav.getBaseAltitude()
+    if HoldAltitude >= 1000
+        and coreAltitude >= HoldAltitude - 20
+        and coreAltitude <= HoldAltitude + 20
+        and aggAlt >= 1000
+        and aggAlt < HoldAltitude + 20
+        and aggAlt > HoldAltitude - 20 then
+        return true
+    end
+    return false
+end
+
+function AggAltHoldLocked()
+    if not AltitudeHold or not antigrav or ExternalAGG or antigrav.getState() == 0 or AntigravTargetAltitude == nil then
+        return false
+    end
+    return HoldAltitude >= 1000 and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10
+end
+
 function script.onActionLoop(action)
     if action == "groundaltitudeup" then
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
-            if AntigravTargetAltitude ~= nil then 
-                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+            if AntigravTargetAltitude ~= nil then
+                if AggAltHoldLocked() then
                     AntigravTargetAltitude = AntigravTargetAltitude + antiGravButtonModifier
                     HoldAltitude = AntigravTargetAltitude
                 else
                     AntigravTargetAltitude = AntigravTargetAltitude + antiGravButtonModifier
                 end
-                antiGravButtonModifier = antiGravButtonModifier * 1.05
-                BrakeIsOn = false
+                if (antiGravButtonModifier * 1.05) < 1000 then
+                    antiGravButtonModifier = antiGravButtonModifier * 1.05
+                else
+                    antiGravButtonModifier = 1000
+                end
             else
                 AntigravTargetAltitude = desiredBaseAltitude + 100
-                BrakeIsOn = false
             end
+            if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+            BrakeIsOn = false
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + holdAltitudeButtonModifier
-            holdAltitudeButtonModifier = holdAltitudeButtonModifier * 1.05
+            if (holdAltitudeButtonModifier * 1.05) < 1000 then
+                holdAltitudeButtonModifier = holdAltitudeButtonModifier * 1.05
+            else
+                holdAltitudeButtonModifier = 1000
+            end
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(1.0)
         end
     elseif action == "groundaltitudedown" then
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
-                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                if AggAltHoldLocked() then
                     AntigravTargetAltitude = AntigravTargetAltitude - antiGravButtonModifier
                     if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                     HoldAltitude = AntigravTargetAltitude
                 else
                     AntigravTargetAltitude = AntigravTargetAltitude - antiGravButtonModifier
-                    if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                 end
-                antiGravButtonModifier = antiGravButtonModifier * 1.05
-                BrakeIsOn = false
+                if (antiGravButtonModifier * 1.05) < 1000 then
+                    antiGravButtonModifier = antiGravButtonModifier * 1.05
+                else
+                    antiGravButtonModifier = 1000
+                end
             else
                 AntigravTargetAltitude = desiredBaseAltitude - 100
-                BrakeIsOn = false
             end
+            if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+            BrakeIsOn = false
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - holdAltitudeButtonModifier
-            holdAltitudeButtonModifier = holdAltitudeButtonModifier * 1.05
+            if (holdAltitudeButtonModifier * 1.05) < 1000 then
+                holdAltitudeButtonModifier = holdAltitudeButtonModifier * 1.05
+            else
+                holdAltitudeButtonModifier = 1000
+            end
+            if HoldAltitude < -1500 then HoldAltitude = coreAltitude end
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(-1.0)
         end
@@ -5669,12 +5731,12 @@ function script.onInputText(text)
         local savename = string.sub(arguement, 1, i-2)
         local pos = string.sub(arguement, i)
         local num        = ' *([+-]?%d+%.?%d*e?[+-]?%d*)'
-        local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
+        local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'
         local systemId, bodyId, latitude, longitude, altitude = string.match(pos, posPattern);
         local planet = atlas[tonumber(systemId)][tonumber(bodyId)]
-        AddNewLocationByWaypoint(savename, tonumber(bodyId), pos)   
+        AddNewLocationByWaypoint(savename, tonumber(bodyId), pos)
         msgText = "Added "..savename.." to saved locations,\nplanet "..planet.name.." at "..pos
-        msgTimer = 5    
+        msgTimer = 5
     elseif command == "/agg" then
         if arguement == nil or arguement == "" then
             msgText = "Usage: /agg targetheight"
