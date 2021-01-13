@@ -116,7 +116,7 @@ LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
 SpaceTarget = false
-AtmoSpeedLimitIsOn = true
+AtmoSpeedLimitIsOff = false
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -1691,15 +1691,15 @@ function SetupButtons()
             end
         end)
     -- Toggle for atmospheric speed limit (default: on)
-    MakeButton("Engage Speed Limit", "Disable Speed Limit", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+    MakeButton("Enable Speed Limit", "Disable Speed Limit", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
         function()
-            return AtmoSpeedLimitIsOn
+            return not AtmoSpeedLimitIsOff
         end, function()
-            AtmoSpeedLimitIsOn = not AtmoSpeedLimitIsOn
-            if (AtmoSpeedLimitIsOn) then
-                 msgText = "Atmo Speed Limit Enabled"
-            else
+            AtmoSpeedLimitIsOff = not AtmoSpeedLimitIsOff
+            if (AtmoSpeedLimitIsOff) then
                 msgText = "Atmo Speed Limit Disabled"
+            else
+                msgText = "Atmo Speed Limit Enabled"
             end
         end)
 
@@ -4624,7 +4624,7 @@ function script.onTick(timerId)
         if not DidLogOutput then
             system.logInfo(LastContent)
             DidLogOutput = true
-        end        
+        end
     elseif timerId == "apTick" then
         -- Localized Functions
         rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
@@ -4639,11 +4639,10 @@ function script.onTick(timerId)
         if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
-        hovGndDet = hoverDetectGround() 
-
+        hovGndDet = hoverDetectGround()
 
         local isWarping = (velMag > 8334)
-        if velMag > SpaceSpeedLimit/3.6 and not inAtmo and not Autopilot then
+        if not isWarping and velMag > SpaceSpeedLimit/3.6 and not inAtmo and not Autopilot then
             msgText = "Space Speed Engine Shutoff reached"
             if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                 Nav.control.cancelCurrentControlMasterMode()
@@ -4659,7 +4658,12 @@ function script.onTick(timerId)
             end
         end
         LastIsWarping = isWarping
-        if inAtmo and atmosphere() > 0.09 then
+        coreAltitude = core.getAltitude()
+        if coreAltitude == 0 then
+            coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
+        end
+        --if inAtmo and atmosphere() > 0.09 then
+        if not AtmoSpeedLimitIsOff and coreAltitude <= 8000 then
             if not speedLimitBreaking  then
                 if velMag > (AtmoSpeedLimit / 3.6) then
                     BrakeIsOn = true
@@ -4670,16 +4674,16 @@ function script.onTick(timerId)
                     BrakeIsOn = false
                     speedLimitBreaking = false
                 end
-            end    
+            end
+        elseif speedLimitBreaking then
+            speedLimitBreaking = false
+            BrakeIsOn = false
         end
+
         if BrakeIsOn then
             brakeInput = 1
         else
             brakeInput = 0
-        end
-        coreAltitude = core.getAltitude()
-        if coreAltitude == 0 then
-            coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
         end
         if ProgradeIsOn then
             if velMag > minAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
