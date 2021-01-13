@@ -1,5 +1,48 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.925 - Increased FPS when using full HUD
+- Changed overlay (hud) to update at 1/4 the speed of autopilot. This also moves hud stuff out of ap area. Gained 10 FPS with little visible impact.
+- Added user variable hudTickRate for those who want to fine tune it, default is 4 times slower than ap tick rate (15 times/sec vice 60 times/sec)
+hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate. hudTickRate should be >= apTickRate.
+The hudTickRate has the biggest impact on FPS as it determines how often the overlay is redrawn(updated).  0.25 gives a 20+ fps gain, but you get 4 fps hud update.
+
+Version 4.924
+- Fixed time display for Days - Hours
+- Added default values to all user variables (Default: value)
+- Added SpaceSpeedLimit user parameter - When you hit the limit, and are not in autopilot mode, engines will turn off.  Default is 30000 (so will never apply)
+SpaceSpeedLimit = 30000 -- export: (Default: 30000) Space speed limit in KM/H.  If you hit this speed but are not in active autopilot, engines will turn off.
+- Added DisplayOrbit, OrbitMapSize, OrbitMapX, and OrbitMapY to user settings
+DisplayOrbit = true -- export: Show Orbit display when valid or not.  May also be toggled with shift Buttons
+OrbitMapSize = 250 -- export: Size of the orbit map, make sure it is divisible by 4
+OrbitMapX = 75 -- export: X postion of Orbit Display Disabled
+OrbitMapY = 0 -- export:  Y position of Orbit Display
+
+Version 4.923
+- Cleaned up autopilot performance for various conditions, fixed re-entry to saved location.
+- Added /G dump - shows all changable variables and current setting.
+- Restored torqueFactor export variable - Force factor applied to reach rotationSpeed
+(higher value may be unstable) Valid values: Superior or equal to 0.01
+- Slowed approach to 100k when doing autopilot from planet to off before aligning to target to allow more accuracy
+
+Version 4.922 - Now with space! (Space waypoints and autopiloting to them)
+WARNING WARNING WARNING - Autopiloting to a point in space that has a physical object at it might end up
+with you smeared all over it.  The AP endeavors to stop you in time. Recommend setting a waypoint nearby or 
+wear a diaper AND brown pants buttercup.
+- Autopilot will now go to a saved location in space.  If on arrival you are too far off, you can Alt-4 again and 
+it will close in.
+- Added Space as a entry in the Atlas to allow for saving locations in space.
+- /addlocation now supports space waypoints.
+Save Locations:
+To make locations on planets, use either the Save Button or /addlocation Name Waypoint command
+To make locations in space, use only the /addlocation Name Waypoint command
+To rename a location, select it in the Interplanetary window, then use the /setname Name command
+To delete a location, select it in the interplanetary window, then click the Clear button
+Do not use Update button for space locations at this time.
+KNOWN ISSUES:
+- Autopilot from land to space save point may arrive off when first stops, just hit alt-4 again and it will zero in (works best starting in space)
+- Autopilot from space to land point SOMETIMES has issues when ready for re-entry, troubleshooting that.  If happens alt-4 to cancel, brake, alt-4 to go on in.
+
+
 Version 4.921 
 - Fixed issue of converting ::pos to WorldCoordinates.  /addlocation Name ::waypoint works now
 - Provided feedback when adding a waypoint save location.
