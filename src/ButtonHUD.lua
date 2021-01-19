@@ -12,6 +12,7 @@ RemoteFreeze = false -- export: (Default: false) Whether or not to freeze you wh
 RemoteHud = false -- export: (Default: false) Whether you want full HUD while in remote mode, experimental, might not look right.
 brightHud = false -- export: (Default: false) Enable to prevent hud dimming when in freelook.
 VanillaRockets = false -- export: (Default: false) If on, rockets behave like vanilla
+InvertMouse = false -- export: (Default: false) If true, then when controlling flight mouse Y axis is inverted (pushing up noses plane down)  Does not affect selecting buttons or camera.
 userControlScheme = "virtual joystick" -- export: (Default: "virtual joystick") Set to "virtual joystick", "mouse", or "keyboard"
 ResolutionX = 1920 -- export: (Default: 1920) Does not need to be set to same as game resolution.  You can set 1920 on a 2560 to get larger resolution
 ResolutionY = 1080 -- export: (Default: 1080) Does not need to be set to same as game resolution.  You can set 1080 on a 1440 to get larger resolution
@@ -78,7 +79,7 @@ ExtraLateralTags = "none" -- export: (Default: "none") Enter any extra lateral t
 ExtraVerticalTags = "none" -- export: (Default: "none") Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "up down"  These will be added to the engines that are control by vertical.
 ExternalAGG = false -- export: (Default: false) Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
 UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav script.  This will provide SatNav support.
-apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
+apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.
 hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
@@ -121,7 +122,7 @@ AtmoSpeedLimitIsOff = false
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
                         "PrimaryR", "PrimaryG", "PrimaryB", "warmup", "DeadZone", "circleRad", "MouseXSensitivity",
-                        "MouseYSensitivity", "MaxGameVelocity", "showHud", "autoRollPreference",
+                        "MouseYSensitivity", "MaxGameVelocity", "showHud", "autoRollPreference", "InvertMouse",
                         "pitchSpeedFactor", "yawSpeedFactor", "rollSpeedFactor", "brakeSpeedFactor",
                         "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
                         "AutoTakeoffAltitude", "TargetHoverHeight", "AutopilotInterplanetaryThrottle",
@@ -267,6 +268,8 @@ local velocity = vec3(core.getWorldVelocity())
 local velMag = vec3(velocity):len()
 local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
+local deltaX = system.getMouseDeltaX()
+local deltaY = system.getMouseDeltaY()
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -493,14 +496,14 @@ function SetupChecks()
             Nav.control.retractLandingGears()
         end
     end
-    
+
     if targetGroundAltitude ~= nil then
         Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
-        if targetGroundAltitude == 0 and not hasGear then 
-            GearExtended = true 
+        if targetGroundAltitude == 0 and not hasGear then
+            GearExtended = true
         end
     else
-        targetGroundAltitude = Nav:getTargetGroundAltitude() 
+        targetGroundAltitude = Nav:getTargetGroundAltitude()
         if GearExtended or not hasGear then
             Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             GearExtended = true
@@ -515,7 +518,7 @@ function SetupChecks()
 end
 
 function ConvertResolutionX (v)
-    if ResolutionX == 1920 then 
+    if ResolutionX == 1920 then
         return v
     else
         return round(ResolutionX * v / 1920, 0)
@@ -523,7 +526,7 @@ function ConvertResolutionX (v)
 end
 
 function ConvertResolutionY (v)
-    if ResolutionY == 1080 then 
+    if ResolutionY == 1080 then
         return v
     else
         return round(ResolutionY * v / 1080, 0)
@@ -539,8 +542,8 @@ function RefreshLastMaxBrake(gravity, force)
     if (force ~= nil and force) or (lastMaxBrakeAtG == nil or lastMaxBrakeAtG ~= gravity) then
         local velocity = core.getVelocity()
         local speed = vec3(velocity):len()
-        local maxBrake = jdecode(unit.getData()).maxBrake 
-        if maxBrake ~= nil and maxBrake > 0 and inAtmo then 
+        local maxBrake = jdecode(unit.getData()).maxBrake
+        if maxBrake ~= nil and maxBrake > 0 and inAtmo then
             maxBrake = maxBrake / utils.clamp(speed/100, 0.1, 1)
             maxBrake = maxBrake / atmoden
             if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
@@ -1264,6 +1267,7 @@ function clearAll()
         TurnBurn = false
         gyroIsOn = false
         LockPitch = nil
+        AtmoSpeedLimitIsOff = false
     else
         clearAllCheck = true
     end
@@ -2504,7 +2508,7 @@ function DrawWarnings(newContent)
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Autopilot %s</text>]],
                                           warningX, apY+20, AutopilotStatus)
     elseif LockPitch ~= nil then
-        newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">LockedPitch: %d</text>]],
+        newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Locked Pitch: %d</text>]],
                                             warningX, apY+20, mfloor(LockPitch))
     elseif followMode then
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Follow Mode Engaged</text>]],
@@ -4244,7 +4248,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.925
+    VERSION_NUMBER = 4.926
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4422,6 +4426,9 @@ function script.onTick(timerId)
         collectgarbage("collect")
     elseif timerId == "fiveSecond" then
         -- Support for SatNav by Trog
+        if not dbHud_1 then
+            return
+        end
         myAutopilotTarget = dbHud_1.getStringValue("SPBAutopilotTargetName")
         if myAutopilotTarget ~= nil and myAutopilotTarget ~= "" and myAutopilotTarget ~= "SatNavNotChanged" then
             local result = json.decode(dbHud_1.getStringValue("SavedLocations"))
@@ -4502,8 +4509,6 @@ function script.onTick(timerId)
         end
 
         if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
-            simulatedX = screen_1.getMouseX() * ResolutionX
-            simulatedY = screen_1.getMouseY() * ResolutionY
             SetButtonContains()
             DrawButtons(newContent)
             if screen_1.getMouseState() == 1 then
@@ -4514,10 +4519,6 @@ function script.onTick(timerId)
                                               halfResolutionX, halfResolutionY, simulatedX, simulatedY)
         elseif system.isViewLocked() == 0 then
             if isRemote() == 1 and holdingCtrl then
-                if not Animating then
-                    simulatedX = simulatedX + deltaX
-                    simulatedY = simulatedY + deltaY
-                end
                 SetButtonContains()
                 DrawButtons(newContent)
 
@@ -4551,6 +4552,60 @@ function script.onTick(timerId)
                 end
             else
                 CheckButtons()
+            end
+        else
+            if not holdingCtrl and isRemote() == 0 then -- Draw deadzone circle if it's navigating
+                CheckButtons()
+
+                if distance > DeadZone then -- Draw a line to the cursor from the screen center
+                    -- Note that because SVG lines fucking suck, we have to do a translate and they can't use calc in their params
+                    DrawCursorLine(newContent)
+                end
+            else
+                SetButtonContains()
+                DrawButtons(newContent)
+
+            end
+            -- Cursor always on top, draw it last
+            newContent[#newContent + 1] = stringf(
+                                              [[<g transform="translate(%d %d)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
+                                              halfResolutionX, halfResolutionY, simulatedX, simulatedY)
+        end
+        newContent[#newContent + 1] = [[</svg></body>]]
+        content = table.concat(newContent, "")
+        if not DidLogOutput then
+            system.logInfo(LastContent)
+            DidLogOutput = true
+        end
+    elseif timerId == "apTick" then
+        -- Localized Functions
+        rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
+        inAtmo = (atmosphere() > 0)
+        deltaX = system.getMouseDeltaX()
+        deltaY = system.getMouseDeltaY()
+        if InvertMouse and not holdingCtrl then deltaY = -deltaY end
+        yawInput2 = 0
+        rollInput2 = 0
+        pitchInput2 = 0
+        velocity = vec3(core.getWorldVelocity())
+        velMag = vec3(velocity):len()
+        sys = galaxyReference[0]
+        planet = sys:closestBody(core.getConstructWorldPos())
+        if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
+        kepPlanet = Kep(planet)
+        orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
+        hovGndDet = hoverDetectGround()
+
+        if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
+            simulatedX = screen_1.getMouseX() * ResolutionX
+            simulatedY = screen_1.getMouseY() * ResolutionY
+        elseif system.isViewLocked() == 0 then
+            if isRemote() == 1 and holdingCtrl then
+                if not Animating then
+                    simulatedX = simulatedX + deltaX
+                    simulatedY = simulatedY + deltaY
+                end
+            else
                 simulatedX = 0
                 simulatedY = 0 -- Reset after they do view things, and don't keep sending inputs while unlocked view
                 -- Except of course autopilot, which is later.
@@ -4583,8 +4638,8 @@ function script.onTick(timerId)
                     simulatedY = 0
                     -- pitchInput2 = pitchInput2 - deltaY * MousePitchFactor
                     -- yawInput2 = yawInput2 - deltaX * MouseYawFactor
-                    -- So... this is weird.  
-                    -- It's doing some odd things and giving us some weird values. 
+                    -- So... this is weird.
+                    -- It's doing some odd things and giving us some weird values.
 
                     -- utils.smoothstep(progress, low, high)*2-1
                     pitchInput2 = (-utils.smoothstep(deltaY, -100, 100) + 0.5) * 2 * MousePitchFactor
@@ -4601,48 +4656,11 @@ function script.onTick(timerId)
                 -- We'd have to hook 0-9 in their events, and they'd have to point at the target, so it wouldn't be while this screen is open
 
                 -- What that means is, if we get here, check our hovers.  If one of them is active, trigger the thing and deactivate the hover
-                CheckButtons()
-
-                if distance > DeadZone then -- Draw a line to the cursor from the screen center
-                    -- Note that because SVG lines fucking suck, we have to do a translate and they can't use calc in their params
-                    DrawCursorLine(newContent)
-                end
-            elseif holdingCtrl then
-                -- Shift is being held, draw buttons.
-                -- Brake toggle, face prograde, face retrograde (for now)
-                -- We've got some vars setup in Start for them to make this easier to work with
-                SetButtonContains()
-                DrawButtons(newContent)
             end
-            -- Cursor always on top, draw it last
-            newContent[#newContent + 1] = stringf(
-                                              [[<g transform="translate(%d %d)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                              halfResolutionX, halfResolutionY, simulatedX, simulatedY)
         end
-        newContent[#newContent + 1] = [[</svg></body>]]
-        content = table.concat(newContent, "")
-        if not DidLogOutput then
-            system.logInfo(LastContent)
-            DidLogOutput = true
-        end
-    elseif timerId == "apTick" then
-        -- Localized Functions
-        rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
-        inAtmo = (atmosphere() > 0)
-        yawInput2 = 0
-        rollInput2 = 0
-        pitchInput2 = 0
-        velocity = vec3(core.getWorldVelocity())
-        velMag = vec3(velocity):len()
-        sys = galaxyReference[0]
-        planet = sys:closestBody(core.getConstructWorldPos())
-        if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
-        kepPlanet = Kep(planet)
-        orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
-        hovGndDet = hoverDetectGround()
 
         local isWarping = (velMag > 8334)
-        if not isWarping and velMag > SpaceSpeedLimit/3.6 and not inAtmo and not Autopilot then
+        if velMag > SpaceSpeedLimit/3.6 and not inAtmo and not Autopilot and not isWarping then
             msgText = "Space Speed Engine Shutoff reached"
             if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                 Nav.control.cancelCurrentControlMasterMode()
@@ -5674,7 +5692,7 @@ function script.onActionStop(action)
 end
 
 function AggAltHoldLockable()
-    if not AltitudeHold or not antigrav or ExternalAGG or antigrav.getState() == 0 or AntigravTargetAltitude == nil then
+    if not AltitudeHold or not antigrav or ExternalAGG or antigrav.getState() == 0 or AntigravTargetAltitude == nil or LockPitch ~= nil then
         return false
     end
     local aggAlt = antigrav.getBaseAltitude()
@@ -5682,15 +5700,15 @@ function AggAltHoldLockable()
         and coreAltitude >= HoldAltitude - 20
         and coreAltitude <= HoldAltitude + 20
         and aggAlt >= 1000
-        and aggAlt < HoldAltitude + 20
-        and aggAlt > HoldAltitude - 20 then
+        and aggAlt <= HoldAltitude + 20
+        and aggAlt >= HoldAltitude - 20 then
         return true
     end
     return false
 end
 
 function AggAltHoldLocked()
-    if not AltitudeHold or not antigrav or ExternalAGG or antigrav.getState() == 0 or AntigravTargetAltitude == nil then
+    if not AltitudeHold or not antigrav or ExternalAGG or antigrav.getState() == 0 or AntigravTargetAltitude == nil or LockPitch ~= nil then
         return false
     end
     return HoldAltitude >= 1000 and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10
